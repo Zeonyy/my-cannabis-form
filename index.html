@@ -5,6 +5,7 @@
   <title>Multi-Step-Form</title>
   <!-- CSS oder <style> hier -->
 </head>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <body>
   <!-- Dein Multi-Step-Formular -->
   <h1>Willkommen</h1>
@@ -19,3 +20,41 @@
   </script>
 </body>
 </html>
+<script>
+async function handleFinal() {
+  // 1) Referenz auf das Zusammenfassungs-Element
+  const summaryElement = document.getElementById("summaryData");
+  
+  try {
+    // 2) Screenshot mit html2canvas
+    const canvas = await html2canvas(summaryElement);
+    // 3) In base64 konvertieren
+    const screenshotBase64 = canvas.toDataURL("image/png");
+    
+    // 4) An Netlify Function schicken
+    const response = await fetch("https://greenrezept.de/a/gempages?version=v7&shop_id=551625943949509505&theme_page_id=551673701301486806&page_type=GP_PRODUCT", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        screenshot: screenshotBase64,
+        // falls du weitere Daten hast (Name etc.), füge sie hier hinzu
+        name: formData.personal.name,
+        email: formData.personal.email,
+        // ...
+      })
+    });
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error("Fehler in Netlify Function: " + (result.error || result.message));
+    }
+    
+    // 5) Weiterleitung zu Shopify
+    window.location.href = "https://greenrezept.de/a/gempages?version=v7&shop_id=551625943949509505&theme_page_id=551673701301486806&page_type=GP_PRODUCT";
+
+  } catch (err) {
+    console.error("Screenshot-Fehler:", err);
+    alert("Screenshot fehlgeschlagen oder Sendung an Server schlug fehl.");
+  }
+}
+</script>
